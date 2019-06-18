@@ -1,0 +1,77 @@
+{
+  "name": "@folio/assessment",
+  "version": "1.0.0",
+  "description": "a front-end FOLIO module for assessment",
+  "homepage": "https://github.com/jaredrcleghorn/ui-assessment#readme",
+  "bugs": {
+    "url": "https://github.com/jaredrcleghorn/ui-assessment/issues"
+  },
+  "license": "Apache-2.0",
+  "author": "The University of Alabama Libraries",
+  "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jaredrcleghorn/ui-assessment.git"
+  },
+  "scripts": {
+    "start": "stripes serve",
+    "build": "stripes build --output ./output",
+    "test-int": "stripes test nightmare --run demo --show",
+    "test": "stripes test karma",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "prop-types": "^15.6.0",
+    "react-intl": "^2.4.0",
+    "react-router-dom": "^4.1.1"
+  },
+  "devDependencies": {
+    "@bigtest/interactor": "^0.8.1",
+    "@bigtest/mirage": "^0.0.1",
+    "@bigtest/mocha": "^0.5.1",
+    "@bigtest/react": "^0.1.2",
+    "@folio/eslint-config-stripes": "^3.2.1",
+    "@folio/stripes": "^2.0.0",
+    "@folio/stripes-cli": "^1.12.0",
+    "@folio/stripes-core": "^3.0.0",
+    "babel-eslint": "^9.0.0",
+    "babel-polyfill": "^6.26.0",
+    "chai": "^4.2.0",
+    "eslint": "^5.6.0",
+    "mocha": "^5.2.0",
+    "react": "^16.4.1",
+    "react-dom": "^16.4.1",
+    "react-redux": "^5.0.7",
+    "redux": "^4.0.0",
+    "sinon": "^6.3.4"
+  },
+  "peerDependencies": {
+    "@folio/stripes": "^2.0.0",
+    "react": "*"
+  },
+  "engines": {
+    "node": ">=6.0.0"
+  },
+  "stripes": {
+    "type": "app",
+    "displayName": "ui-assessment.meta.title",
+    "route": "/assessment",
+    "hasSettings": true,
+    "okapiInterfaces": {},
+    "permissionSets": [
+      {
+        "permissionName": "module.assessment.enabled",
+        "displayName": "UI: Assessment module is enabled",
+        "visible": true
+      },
+      {
+        "permissionName": "settings.assessment.enabled",
+        "displayName": "Settings (assessment): display list of settings pages",
+        "subPermissions": [
+          "settings.enabled"
+        ],
+        "visible": true
+      }
+    ]
+  }
+}
