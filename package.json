@@ -57,7 +57,9 @@
     "displayName": "ui-assessment.meta.title",
     "route": "/assessment",
     "hasSettings": true,
-    "okapiInterfaces": {},
+    "okapiInterfaces": {
+      "assessment": "1.0"
+    },
     "permissionSets": [
       {
         "permissionName": "module.assessment.enabled",

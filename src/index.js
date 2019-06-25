@@ -1,32 +1,30 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import Switch from 'react-router-dom/Switch';
-import Route from 'react-router-dom/Route';
+import { Switch, Route } from 'react-router-dom';
 import Application from './routes/application';
 import Settings from './settings';
 
 export default class Assessment extends React.Component {
   static propTypes = {
     match: PropTypes.object.isRequired,
-    showSettings: PropTypes.bool
+    showSettings: PropTypes.bool,
+    stripes: PropTypes.shape({
+      connect: PropTypes.func.isRequired
+    }).isRequired
   };
 
-  render() {
-    const {
-      showSettings,
-      match: {
-        path
-      }
-    } = this.props;
+  constructor(props) {
+    super(props);
 
-    if (showSettings) {
-      return <Settings {...this.props} />;
-    } else {
-      return (
-        <Switch>
-          <Route exact component={Application} path={path} />
-        </Switch>
-      );
-    }
+    // Connect component.
+    this.connectedApplication = this.props.stripes.connect(Application);
+  }
+
+  render() {
+    return this.props.showSettings ? <Settings {...this.props} /> : (
+      <Switch>
+        <Route exact path={this.props.match.path} render={() => <this.connectedApplication stripes={this.props.stripes} />} />
+      </Switch>
+    );
   }
 }
