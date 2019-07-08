@@ -50,16 +50,21 @@ export default class Application extends React.Component {
   }
 
   /* Toggles the checked state of the institution's checkbox and
-  initializes the checked state of the institution's campuses'
-  checkboxes. */
+  initializes or deletes the checked states of the the checkboxes of the
+  campuses and libraries under the institution, depending on whether the
+  institution's checkbox is being checked or unchecked. */
   handleInstitutionCheckboxChange(id, i) {
     this.setState(state => {
-      const checkboxWasChecked = !state.checked.institutions[id];
+      const checkboxIsBeingChecked = !state.checked.institutions[id];
       const checkedCampuses = {...state.checked.campuses};
+      const checkedLibraries = {...state.checked.libraries};
 
       this.props.resources.locationUnits.records[i].campuses.forEach(campus => {
-        if (checkboxWasChecked) checkedCampuses[campus.id] = false;
-        else delete checkedCampuses[campus.id];
+        if (checkboxIsBeingChecked) checkedCampuses[campus.id] = false;
+        else {
+          delete checkedCampuses[campus.id];
+          campus.libraries.forEach(library => { delete checkedLibraries[library.id]; });
+        }
       });
 
       return {
@@ -67,45 +72,93 @@ export default class Application extends React.Component {
           ...state.checked,
           institutions: {
             ...state.checked.institutions,
-            [id]: checkboxWasChecked
+            [id]: checkboxIsBeingChecked
           },
           campuses: checkedCampuses
         }
-      }
+      };
     });
   }
 
-  // Toggles the checked state of the campus's checkbox.
-  handleCampusCheckboxChange(id) {
+  /* Toggles the checked state of the campus's checkbox and initializes
+  or deletes the checked states of the checkboes of the libraries under
+  the campus, depending on whether the campus's checkbox is being
+  checked or unchecked. */
+  handleCampusCheckboxChange(id, institutionIndex, campusIndex) {
+    this.setState(state => {
+      const checkboxIsBeingChecked = !state.checked.campuses[id];
+      const checkedLibraries = {...state.checked.libraries};
+
+      this.props.resources.locationUnits.records[institutionIndex].campuses[campusIndex].libraries.forEach(library => {
+        if (checkboxIsBeingChecked) checkedLibraries[library.id] = false;
+        else delete checkedLibraries[library.id];
+      });
+
+      return {
+        checked: {
+          ...state.checked,
+          campuses: {
+            ...state.checked.campuses,
+            [id]: checkboxIsBeingChecked
+          },
+          libraries: checkedLibraries
+        }
+      };
+    });
+  }
+
+  // Toggles the checked state of the library's checkbox.
+  handleLibraryCheckboxChange(id) {
     this.setState(state => ({
       checked: {
         ...state.checked,
-        campuses: {
-          ...state.checked.campuses,
-          [id]: !state.checked.campuses[id]
+        libraries: {
+          ...state.checked.libraries,
+          [id]: !state.checked.libraries[id]
         }
       }
     }));
   }
 
   render() {
-    const locationUnits = this.props.resources.locationUnits;
     const locationUnitsAccordionSet = this.state.locationUnitsLoadedAt !== null ? (function() {
-      const institutions = locationUnits.records;
-      const checkedInstitutions = institutions.filter(institution => this.state.checked.institutions[institution.id]);
-      const campusCheckboxes = [];
+      const checkboxes = {
+        institutions: [],
+        campuses: [],
+        libraries: []
+      };
 
-      checkedInstitutions.forEach(institution => {
-        institution.campuses.forEach(campus => { campusCheckboxes.push(<Checkbox checked={this.state.checked.campuses[campus.id]} key={campus.id} label={campus.name} onChange={() => { this.handleCampusCheckboxChange(campus.id); }} />); });
+      // Populate the checkbox arrays.
+      this.props.resources.locationUnits.records.forEach((institution, institutionIndex) => {
+        // Get the checked state of the institution's checkbox.
+        const institutionCheckboxIsChecked = this.state.checked.institutions[institution.id];
+
+        // Create a checkbox for the institution.
+        checkboxes.institutions.push(<Checkbox checked={institutionCheckboxIsChecked} key={institution.id} label={institution.name} onChange={() => { this.handleInstitutionCheckboxChange(institution.id, institutionIndex); }} />);
+
+        if (institutionCheckboxIsChecked) institution.campuses.forEach((campus, campusIndex) => {
+          // Get the checked state of the campus's checkbox.
+          const campusCheckboxIsChecked = this.state.checked.campuses[campus.id];
+
+          // Create a checkbox for the campus.
+          checkboxes.campuses.push(<Checkbox checked={this.state.checked.campuses[campus.id]} key={campus.id} label={campus.name} onChange={() => { this.handleCampusCheckboxChange(campus.id, institutionIndex, campusIndex); }} />);
+
+          if (campusCheckboxIsChecked) campus.libraries.forEach(library => {
+            checkboxes.libraries.push(<Checkbox checked={this.state.checked.libraries[library.id]} key={library.id} label={library.name} onChange={() => {this.handleLibraryCheckboxChange(library.id); }} />);
+          });
+        });
       });
 
       return (
         <AccordionSet>
           <Accordion label="Institutions" separator={false}>
-            {institutions.map((institution, i) => <Checkbox checked={this.state.checked.institutions[institution.id]} key={institution.id} label={institution.name} onChange={() => { this.handleInstitutionCheckboxChange(institution.id, i); }} />)}
+            {checkboxes.institutions}
           </Accordion>
-          {campusCheckboxes.length !== 0 ? <Accordion label="Campuses" separator={false}>
-            {campusCheckboxes}
+          {checkboxes.campuses.length !== 0 ? <Accordion label="Campuses" separator={false}>
+            {checkboxes.campuses}
+          </Accordion> : null}
+          {checkboxes.libraries.length !== 0 ? <Accordion label="Libraries" separator={false}>
+            {checkboxes.libraries}
           </Accordion> : null}
         </AccordionSet>
       );
@@ -114,9 +167,7 @@ export default class Application extends React.Component {
     return (
       <Paneset>
         <Pane defaultWidth="15%" fluidContentWidth paneTitle="Global Variables">
-          <AccordionSet>
-            {locationUnitsAccordionSet}
-          </AccordionSet>
+          {locationUnitsAccordionSet}
         </Pane>
         <Pane defaultWidth="fill" fluidContentWidth paneTitle={<FormattedMessage id="ui-assessment.meta.title" />} />
       </Paneset>
