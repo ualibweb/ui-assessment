@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { FormattedMessage } from 'react-intl';
-import { Paneset, Pane, AccordionSet, Accordion, Checkbox } from '@folio/stripes/components';
+import { Paneset, Pane, AccordionSet, Accordion, Checkbox, ButtonGroup, Button } from '@folio/stripes/components';
 
 export default class Application extends React.Component {
   static propTypes = {
@@ -26,7 +26,8 @@ export default class Application extends React.Component {
     super(props);
 
     this.state = {
-      locationUnitsLoadedAt: null
+      locationUnitsLoadedAt: null,
+      titlesShouldBeUsed: true
     };
   }
 
@@ -120,6 +121,18 @@ export default class Application extends React.Component {
     }));
   }
 
+  // Determines the style of a button.
+  getButtonStyle(isTitlesButton) {
+    return isTitlesButton === this.state.titlesShouldBeUsed ? "primary" : "default";
+  }
+
+  // Updates the state of the titles-volumes segmented control.
+  handleButtonClick(isTitlesButton) {
+    this.setState({
+      titlesShouldBeUsed: isTitlesButton
+    });
+  }
+
   render() {
     const locationUnitsAccordionSet = this.state.locationUnitsLoadedAt !== null ? (function() {
       const checkboxes = {
@@ -168,6 +181,10 @@ export default class Application extends React.Component {
       <Paneset>
         <Pane defaultWidth="15%" fluidContentWidth paneTitle="Global Variables">
           {locationUnitsAccordionSet}
+          <ButtonGroup>
+            <Button buttonStyle={this.getButtonStyle(true)} onClick={() => { this.handleButtonClick(true); }}>Titles</Button>
+            <Button buttonStyle={this.getButtonStyle(false)} onClick={() => { this.handleButtonClick(false); }}>Volumes</Button>
+          </ButtonGroup>
         </Pane>
         <Pane defaultWidth="fill" fluidContentWidth paneTitle={<FormattedMessage id="ui-assessment.meta.title" />} />
       </Paneset>
