@@ -40,8 +40,8 @@ export default class GlobalVariablesPane extends React.Component {
   render() {
     return (
       <Pane defaultWidth="15%" fluidContentWidth paneTitle="Global Variables">
-        <LocationUnitsAccordionSet institutions={this.props.institutions} isChecked={this.props.globalVariables.isChecked} onIsCheckedChange={this.handleIsCheckedChange} />
         <TitlesVolumesSegmentedControl titlesShouldBeUsed={this.props.globalVariables.titlesShouldBeUsed} onTitlesShouldBeUsedChange={this.handleTitlesShouldBeUsedChange} />
+        <LocationUnitsAccordionSet institutions={this.props.institutions} isChecked={this.props.globalVariables.isChecked} onIsCheckedChange={this.handleIsCheckedChange} />
       </Pane>
     );
   }
