@@ -14,34 +14,19 @@ export default class GlobalVariablesPane extends React.Component {
     onGlobalVariablesChange: PropTypes.func.isRequired
   };
 
-  // Binds event handlers.
-  constructor(props) {
-    super(props);
-    this.handleIsCheckedChange = this.handleIsCheckedChange.bind(this);
-    this.handleTitlesShouldBeUsedChange = this.handleTitlesShouldBeUsedChange.bind(this);
-  }
-
-  // Updates the checked states of the location units.
-  handleIsCheckedChange(isChecked) {
+  // Updates a global variable.
+  handleGlobalVariableChange(name, value) {
     this.props.onGlobalVariablesChange({
       ...this.props.globalVariables,
-      isChecked
-    });
-  }
-
-  // Updates the state of the titles-volumes segmented control.
-  handleTitlesShouldBeUsedChange(titlesShouldBeUsed) {
-    this.props.onGlobalVariablesChange({
-      ...this.props.globalVariables,
-      titlesShouldBeUsed
+      [name]: value
     });
   }
 
   render() {
     return (
       <Pane defaultWidth="15%" fluidContentWidth paneTitle="Global Variables">
-        <TitlesVolumesSegmentedControl titlesShouldBeUsed={this.props.globalVariables.titlesShouldBeUsed} onTitlesShouldBeUsedChange={this.handleTitlesShouldBeUsedChange} />
-        <LocationUnitsAccordionSet institutions={this.props.institutions} isChecked={this.props.globalVariables.isChecked} onIsCheckedChange={this.handleIsCheckedChange} />
+        <TitlesVolumesSegmentedControl titlesShouldBeUsed={this.props.globalVariables.titlesShouldBeUsed} onTitlesShouldBeUsedChange={titlesShouldBeUsed => { this.handleGlobalVariableChange("titlesShouldBeUsed", titlesShouldBeUsed); }} />
+        <LocationUnitsAccordionSet institutions={this.props.institutions} isChecked={this.props.globalVariables.isChecked} onIsCheckedChange={isChecked => { this.handleGlobalVariableChange("isChecked", isChecked); }} />
       </Pane>
     );
   }
