@@ -68,10 +68,17 @@ export default class Application extends React.Component {
   render() {
     const locationUnits = this.props.resources.locationUnits;
     const locationUnitsHaveLoaded = locationUnits !== null && locationUnits.hasLoaded;
+    const checkedLibraries = [];
+
+    // Populate checkedLibraries.
+    if (locationUnitsHaveLoaded) locationUnits.records.forEach(institution => { institution.campuses.forEach(campus => { campus.libraries.forEach(library => {
+      if (this.state.globalVariables.isChecked[library.id]) checkedLibraries.push(library.id);
+    }); }); });
 
     return (
       <Paneset>
         {locationUnitsHaveLoaded && <GlobalVariablesPane globalVariables={this.state.globalVariables} institutions={locationUnits.records} onGlobalVariablesChange={this.handleGlobalVariablesChange} />}
+        {checkedLibraries.length !== 0 && <Pane defaultWidth="15%" fluidContentWidth paneTitle="Reports" />}
         <Pane defaultWidth="fill" fluidContentWidth paneTitle={<FormattedMessage id="ui-assessment.meta.title" />} />
       </Paneset>
     );
