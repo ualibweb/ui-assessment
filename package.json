@@ -21,6 +21,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "moment": "^2.24.0",
     "prop-types": "^15.6.0",
     "react-intl": "^2.4.0",
     "react-router-dom": "^4.1.1"

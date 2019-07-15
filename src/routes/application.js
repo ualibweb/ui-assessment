@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { FormattedMessage } from 'react-intl';
+import moment from 'moment';
 import { Paneset, Pane } from '@folio/stripes/components';
 import GlobalVariablesPane from '../components/global-variables-pane';
 
@@ -26,11 +27,15 @@ export default class Application extends React.Component {
   constructor(props) {
     super(props);
 
+    const dateFormat = 'MM/DD/YYYY';
+
     this.state = {
       locationUnitsLoadedAt: null,
       globalVariables: {
         isChecked: {},
-        titlesShouldBeUsed: true
+        titlesShouldBeUsed: true,
+        from: moment().subtract(30, 'days').format(dateFormat),
+        to: moment().format(dateFormat)
       }
     };
 
