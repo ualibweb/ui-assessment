@@ -2,11 +2,16 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { FormattedMessage } from 'react-intl';
 import moment from 'moment';
-import { Paneset, Pane } from '@folio/stripes/components';
+import { Switch, Route } from 'react-router-dom';
+import { Paneset, Pane, NavList, NavListItem } from '@folio/stripes/components';
 import GlobalVariablesPane from '../components/global-variables-pane';
+import CollectionsByLCCNumberReport from './collections-by-lcc-number-report';
 
 export default class Application extends React.Component {
   static propTypes = {
+    match: PropTypes.shape({
+      path: PropTypes.string.isRequired
+    }).isRequired,
     resources: PropTypes.shape({
       locationUnits: PropTypes.shape({
         hasLoaded: PropTypes.bool.isRequired,
@@ -23,7 +28,7 @@ export default class Application extends React.Component {
     }
   };
 
-  // Initializes state and binds event handlers.
+  // Initializes state, binds an event handler, and connects a component.
   constructor(props) {
     super(props);
 
@@ -40,6 +45,7 @@ export default class Application extends React.Component {
     };
 
     this.handleGlobalVariablesChange = this.handleGlobalVariablesChange.bind(this);
+    this.connectedCollectionsByLCCNumberReport = this.props.stripes.connect(CollectionsByLCCNumberReport);
   }
 
   /* Initializes the checked state of the institutions. */
@@ -78,8 +84,16 @@ export default class Application extends React.Component {
     return (
       <Paneset>
         {locationUnitsHaveLoaded && <GlobalVariablesPane globalVariables={this.state.globalVariables} institutions={locationUnits.records} onGlobalVariablesChange={this.handleGlobalVariablesChange} />}
-        {checkedLibraries.length !== 0 && <Pane defaultWidth="15%" fluidContentWidth paneTitle="Reports" />}
-        <Pane defaultWidth="fill" fluidContentWidth paneTitle={<FormattedMessage id="ui-assessment.meta.title" />} />
+        {checkedLibraries.length !== 0 && <Pane defaultWidth="15%" fluidContentWidth paneTitle="Reports">
+          <NavList>
+            <NavListItem to={`${this.props.match.path}/collections-by-lcc-number`}>Collections by LCC Number</NavListItem>
+          </NavList>
+        </Pane>}
+        <Pane defaultWidth="fill" fluidContentWidth paneTitle={<FormattedMessage id="ui-assessment.meta.title" />}>
+          {checkedLibraries.length !== 0 && <Switch>
+            <Route exact path={`${this.props.match.path}/collections-by-lcc-number`} render={() => <this.connectedCollectionsByLCCNumberReport libraries={checkedLibraries} titlesShouldBeUsed={this.state.globalVariables.titlesShouldBeUsed} />} />
+          </Switch>}
+        </Pane>
       </Paneset>
     );
   }

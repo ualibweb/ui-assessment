@@ -23,7 +23,7 @@ export default class Assessment extends React.Component {
   render() {
     return this.props.showSettings ? <Settings {...this.props} /> : (
       <Switch>
-        <Route exact path={this.props.match.path} render={() => <this.connectedApplication stripes={this.props.stripes} />} />
+        <Route path={this.props.match.path} render={() => <this.connectedApplication match={this.props.match} stripes={this.props.stripes} />} />
       </Switch>
     );
   }
