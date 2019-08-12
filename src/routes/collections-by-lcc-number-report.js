@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
+import { Button } from '@folio/stripes/components';
 
 export default class CollectionsByLCCNumberReport extends React.Component {
   static propTypes = {
@@ -9,7 +10,6 @@ export default class CollectionsByLCCNumberReport extends React.Component {
     resources: PropTypes.shape({
       collectionsByLCCNumber: PropTypes.shape({
         hasLoaded: PropTypes.bool.isRequired,
-        loadedAt: PropTypes.instanceOf(Date),
         records: PropTypes.array.isRequired
       })
     }).isRequired
@@ -22,74 +22,128 @@ export default class CollectionsByLCCNumberReport extends React.Component {
     }
   };
 
+  // Initializes properties and binds an event handler.
   constructor(props) {
     super(props);
-    this.chartRef = React.createRef();
+
+    this.canvasRef = React.createRef();
+    this.state = {
+      mainClass: null
+    };
+
+    this.handleButtonClick = this.handleButtonClick.bind(this);
+  }
+
+  componentDidUpdate() {
+    const collectionsByLCCNumber = this.props.resources.collectionsByLCCNumber;
+
+    if (collectionsByLCCNumber !== null && collectionsByLCCNumber.hasLoaded) {
+      const chart = this.chart;
+      const titlesOrVolumes = this.props.titlesShouldBeUsed ? 'titles' : 'volumes';
+      const hueStep = 360 / (collectionsByLCCNumber.records.length - 1);
+
+      // Start fresh.
+      const labels = [];
+      const datasetData = [];
+      const backgroundColor = [];
+      const borderColor = [];
+      const titles = [];
+
+      let mainClassesOrSubclasses;
+      let labelKey;
+
+      if (this.state.mainClass === null) {
+        mainClassesOrSubclasses = collectionsByLCCNumber.records;
+        labelKey = 'letter';
+      } else {
+        mainClassesOrSubclasses = this.state.mainClass.subclasses;
+        labelKey = 'letters';
+      }
+
+      mainClassesOrSubclasses.forEach((mainClassOrSubclass, i) => {
+        const hue = i * hueStep;
+        let count = 0;
+
+        // Sum the counts of the titles or volumes in the specified libraries.
+        this.props.libraries.forEach(library => {
+          if (mainClassOrSubclass.counts[library] !== undefined) {
+            count += mainClassOrSubclass.counts[library][titlesOrVolumes];
+          }
+        });
+
+        labels.push(mainClassOrSubclass[labelKey]);
+        datasetData.push(count);
+        backgroundColor.push(this.createHslString(hue, 0.5));
+        borderColor.push(this.createHslString(hue, 0.75));
+        titles.push(mainClassOrSubclass.caption);
+      });
+
+      if (chart === undefined) {
+        this.chart = new Chart(this.canvasRef.current, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              data: datasetData,
+              backgroundColor,
+              borderColor,
+              borderWidth: 1,
+              titles
+            }]
+          },
+          options: {
+            title: {
+              display: true,
+              text: 'Collections by LCC Number'
+            },
+            legend: {
+              display: false
+            },
+            tooltips: {
+              callbacks: {
+                title: ([tooltipItem], {datasets}) => datasets[tooltipItem.datasetIndex].titles[tooltipItem.index]
+              }
+            },
+            onClick: (event, [activeElement]) => {
+              if (this.state.mainClass === null) {
+                this.setState({
+                  mainClass: this.props.resources.collectionsByLCCNumber.records[activeElement._index]
+                });
+              }
+            }
+          }
+        });
+      } else {
+        const data = chart.data;
+        const dataset = data.datasets[0];
+
+        data.labels = labels;
+        dataset.data = datasetData;
+        dataset.backgroundColor = backgroundColor;
+        dataset.borderColor = borderColor;
+        dataset.titles = titles;
+
+        chart.update();
+      }
+    }
   }
 
   createHslString(hue, alpha) {
     return `hsl(${hue}, 100%, 70%, ${alpha})`;
   }
 
+  handleButtonClick() {
+    this.setState({
+      mainClass: null
+    });
+  }
+
   render() {
-    const collectionsByLCCNumber = this.props.resources.collectionsByLCCNumber;
-
-    if (collectionsByLCCNumber !== null && collectionsByLCCNumber.hasLoaded) {
-      const mainClasses = collectionsByLCCNumber.records;
-      const titlesOrVolumes = this.props.titlesShouldBeUsed ? 'titles' : 'volumes';
-      const hueStep = 360 / (collectionsByLCCNumber.records.length - 1);
-      const labels = [];
-      const data = [];
-      const backgroundColor = [];
-      const borderColor = [];
-      const titles = [];
-
-      // Populate the arrays.
-      mainClasses.forEach((mainClass, i) => {
-        const hue = i * hueStep;
-        let count = 0;
-
-        // Sum the counts of the titles or volumes in the specified libraries.
-        this.props.libraries.forEach(library => {
-          if (mainClass.counts[library] !== undefined) count += mainClass.counts[library][titlesOrVolumes];
-        });
-
-        labels.push(mainClass.letter);
-        data.push(count);
-        backgroundColor.push(this.createHslString(hue, 0.5));
-        borderColor.push(this.createHslString(hue, 0.75));
-        titles.push(mainClass.caption);
-      });
-
-      new Chart(this.chartRef.current, {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{
-            data,
-            backgroundColor,
-            borderColor,
-            borderWidth: 1,
-            titles
-          }]
-        },
-        options: {
-          title: {
-            display: true,
-            text: 'Collections by LCC Number'
-          },
-          legend: {
-            display: false
-          },
-          tooltips: {
-            callbacks: {
-              title: ([tooltipItem], data) => data.datasets[tooltipItem.datasetIndex].titles[tooltipItem.index]
-            }
-          }
-        }
-      });
-    }
-
-    return <canvas ref={this.chartRef} />;
+    return (
+      <React.Fragment>
+        <canvas ref={this.canvasRef} />
+        <Button disabled={this.state.mainClass === null} onClick={this.handleButtonClick}>Back</Button>
+      </React.Fragment>
+    );
   }
 }
