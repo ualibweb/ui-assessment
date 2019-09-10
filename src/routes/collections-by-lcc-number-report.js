@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
 import { Button } from '@folio/stripes/components';
+import createHslString from '../functions/create-hsl-string';
 
 export default class CollectionsByLCCNumberReport extends React.Component {
   static propTypes = {
@@ -40,7 +41,7 @@ export default class CollectionsByLCCNumberReport extends React.Component {
     if (collectionsByLCCNumber !== null && collectionsByLCCNumber.hasLoaded) {
       const chart = this.chart;
       const titlesOrVolumes = this.props.titlesShouldBeUsed ? 'titles' : 'volumes';
-      const hueStep = 360 / (collectionsByLCCNumber.records.length - 1);
+      const hueStep = 360 / (collectionsByLCCNumber.records.length);
 
       // Start fresh.
       const labels = [];
@@ -73,8 +74,8 @@ export default class CollectionsByLCCNumberReport extends React.Component {
 
         labels.push(mainClassOrSubclass[labelKey]);
         datasetData.push(count);
-        backgroundColor.push(this.createHslString(hue, 0.5));
-        borderColor.push(this.createHslString(hue, 0.75));
+        backgroundColor.push(createHslString(hue, 0.5));
+        borderColor.push(createHslString(hue, 0.75));
         titles.push(mainClassOrSubclass.caption);
       });
 
@@ -126,10 +127,6 @@ export default class CollectionsByLCCNumberReport extends React.Component {
         chart.update();
       }
     }
-  }
-
-  createHslString(hue, alpha) {
-    return `hsl(${hue}, 100%, 70%, ${alpha})`;
   }
 
   handleButtonClick() {
