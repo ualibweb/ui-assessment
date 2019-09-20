@@ -3,11 +3,12 @@ import PropTypes from 'prop-types';
 import Chart from 'chart.js';
 import { Button } from '@folio/stripes/components';
 import createHslString from '../functions/create-hsl-string';
+import collectionTypes from '../json/collection-types.json';
 
 export default class CollectionsByLCCNumberReport extends React.Component {
   static propTypes = {
     libraries: PropTypes.arrayOf(PropTypes.string).isRequired,
-    titlesShouldBeUsed: PropTypes.bool.isRequired,
+    types: PropTypes.arrayOf(PropTypes.string).isRequired,
     resources: PropTypes.shape({
       collectionsByLCCNumber: PropTypes.shape({
         hasLoaded: PropTypes.bool.isRequired,
@@ -23,7 +24,6 @@ export default class CollectionsByLCCNumberReport extends React.Component {
     }
   };
 
-  // Initializes properties and binds an event handler.
   constructor(props) {
     super(props);
 
@@ -31,7 +31,6 @@ export default class CollectionsByLCCNumberReport extends React.Component {
     this.state = {
       mainClass: null
     };
-
     this.handleButtonClick = this.handleButtonClick.bind(this);
   }
 
@@ -39,16 +38,9 @@ export default class CollectionsByLCCNumberReport extends React.Component {
     const collectionsByLCCNumber = this.props.resources.collectionsByLCCNumber;
 
     if (collectionsByLCCNumber !== null && collectionsByLCCNumber.hasLoaded) {
+      const types = this.props.types;
+      const hueStep = 360 / types.length;
       const chart = this.chart;
-      const titlesOrVolumes = this.props.titlesShouldBeUsed ? 'titles' : 'volumes';
-      const hueStep = 360 / (collectionsByLCCNumber.records.length);
-
-      // Start fresh.
-      const labels = [];
-      const datasetData = [];
-      const backgroundColor = [];
-      const borderColor = [];
-      const titles = [];
 
       let mainClassesOrSubclasses;
       let labelKey;
@@ -61,22 +53,41 @@ export default class CollectionsByLCCNumberReport extends React.Component {
         labelKey = 'letters';
       }
 
-      mainClassesOrSubclasses.forEach((mainClassOrSubclass, i) => {
-        const hue = i * hueStep;
-        let count = 0;
+      const labels = [];
+      const datasets = [];
+      const tooltipTitles = [];
 
-        // Sum the counts of the titles or volumes in the specified libraries.
-        this.props.libraries.forEach(library => {
-          if (mainClassOrSubclass.counts[library] !== undefined) {
-            count += mainClassOrSubclass.counts[library][titlesOrVolumes];
-          }
+      mainClassesOrSubclasses.forEach(mainClassOrSubclass => {
+        labels.push(mainClassOrSubclass[labelKey]);
+        tooltipTitles.push(mainClassOrSubclass.caption);
+      });
+
+      types.forEach((type, i) => {
+        const data = [];
+        const hue = i * hueStep;
+
+        mainClassesOrSubclasses.forEach(mainClassOrSubclass => {
+          let count = 0;
+
+          // Sum the counts.
+          this.props.libraries.forEach(library => {
+            const libraryCounts = mainClassOrSubclass.counts[library];
+
+            if (libraryCounts !== undefined) {
+              count += libraryCounts[type];
+            }
+          });
+
+          data.push(count);
         });
 
-        labels.push(mainClassOrSubclass[labelKey]);
-        datasetData.push(count);
-        backgroundColor.push(createHslString(hue, 0.5));
-        borderColor.push(createHslString(hue, 0.75));
-        titles.push(mainClassOrSubclass.caption);
+        datasets.push({
+          label: collectionTypes[type].text,
+          data,
+          backgroundColor: createHslString(hue, 0.5),
+          borderColor: createHslString(hue, 0.7),
+          borderWidth: 1,
+        });
       });
 
       if (chart === undefined) {
@@ -84,25 +95,17 @@ export default class CollectionsByLCCNumberReport extends React.Component {
           type: 'bar',
           data: {
             labels,
-            datasets: [{
-              data: datasetData,
-              backgroundColor,
-              borderColor,
-              borderWidth: 1,
-              titles
-            }]
+            datasets,
+            tooltipTitles
           },
           options: {
             title: {
               display: true,
               text: 'Collections by LCC Number'
             },
-            legend: {
-              display: false
-            },
             tooltips: {
               callbacks: {
-                title: ([tooltipItem], {datasets}) => datasets[tooltipItem.datasetIndex].titles[tooltipItem.index]
+                title: ([{index}], {tooltipTitles}) => tooltipTitles[index]
               }
             },
             onClick: (event, [activeElement]) => {
@@ -115,14 +118,11 @@ export default class CollectionsByLCCNumberReport extends React.Component {
           }
         });
       } else {
-        const data = chart.data;
-        const dataset = data.datasets[0];
-
-        data.labels = labels;
-        dataset.data = datasetData;
-        dataset.backgroundColor = backgroundColor;
-        dataset.borderColor = borderColor;
-        dataset.titles = titles;
+        chart.data = {
+          labels,
+          datasets,
+          tooltipTitles
+        };
 
         chart.update();
       }
@@ -143,4 +143,4 @@ export default class CollectionsByLCCNumberReport extends React.Component {
       </React.Fragment>
     );
   }
-}
+};

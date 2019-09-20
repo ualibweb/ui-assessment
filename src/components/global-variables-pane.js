@@ -2,34 +2,55 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Pane, Datepicker } from '@folio/stripes/components';
 import LocationUnitsAccordionSet from './location-units-accordion-set';
-import TitlesVolumesSegmentedControl from './titles-volumes-segmented-control';
+import ReportTypesSegmentedControl from './report-types-segmented-control';
+import TypesAccordion from './types-accordion';
+import arrayify from '../functions/arrayify';
+import reportTypes from '../json/report-types.json';
+import _collectionTypes from '../json/collection-types.json';
+import _circulationTypes from '../json/circulation-types.json';
+
+const collectionTypes = arrayify(_collectionTypes, 'key');
+const circulationTypes = arrayify(_circulationTypes, 'key');
 
 export default class GlobalVariablesPane extends React.Component {
   static propTypes = {
-    globalVariables: PropTypes.shape({
-      isChecked: PropTypes.object.isRequired,
-      titlesShouldBeUsed: PropTypes.bool.isRequired
-    }).isRequired,
     institutions: PropTypes.array.isRequired,
-    onGlobalVariablesChange: PropTypes.func.isRequired
+    locationUnitIsSelected: PropTypes.object.isRequired,
+    reportType: PropTypes.number.isRequired,
+    collectionTypeIsSelected: PropTypes.object.isRequired,
+    circulationTypeIsSelected: PropTypes.object.isRequired,
+    from: PropTypes.string.isRequired,
+    to: PropTypes.string.isRequired,
+    onGlobalVariableChange: PropTypes.func.isRequired
   };
 
-  // Updates a global variable.
-  handleGlobalVariableChange(name, value) {
-    this.props.onGlobalVariablesChange({
-      ...this.props.globalVariables,
-      [name]: value
-    });
+  getEventHandler(name, value) {
+    function handleEvent(value) {
+      this.props.onGlobalVariableChange(name, value);
+    };
+
+    return handleEvent.bind(this);
+  }
+
+  getDatepickerEventHandler(name) {
+    function handleDatepickerEvent(event) {
+      this.props.onGlobalVariableChange(name, event.target.value);
+    }
+
+    return handleDatepickerEvent.bind(this);
   }
 
   render() {
     return (
       <Pane defaultWidth="15%" fluidContentWidth paneTitle="Global Variables">
-        <TitlesVolumesSegmentedControl titlesShouldBeUsed={this.props.globalVariables.titlesShouldBeUsed} onTitlesShouldBeUsedChange={titlesShouldBeUsed => { this.handleGlobalVariableChange("titlesShouldBeUsed", titlesShouldBeUsed); }} />
-        <LocationUnitsAccordionSet institutions={this.props.institutions} isChecked={this.props.globalVariables.isChecked} onIsCheckedChange={isChecked => { this.handleGlobalVariableChange("isChecked", isChecked); }} />
-        <Datepicker label="From" onChange={event => { this.handleGlobalVariableChange('from', event.target.value)}} value={this.props.globalVariables.from} />
-        <Datepicker label="To" onChange={event => { this.handleGlobalVariableChange('to', event.target.value)}} value={this.props.globalVariables.to} />
+        <LocationUnitsAccordionSet institutions={this.props.institutions} isSelected={this.props.locationUnitIsSelected} onChange={this.getEventHandler('locationUnitIsSelected')} />
+        <ReportTypesSegmentedControl value={this.props.reportType} onChange={this.getEventHandler('reportType')} />
+        {this.props.reportType === reportTypes.collections ? <TypesAccordion label="Collection Types" types={collectionTypes} isSelected={this.props.collectionTypeIsSelected} onChange={this.getEventHandler('collectionTypeIsSelected')} /> : <React.Fragment>
+          <TypesAccordion label="Circulation Types" types={circulationTypes} isSelected={this.props.circulationTypeIsSelected} onChange={this.getEventHandler('circulationTypeIsSelected')} />
+          <Datepicker label="From" value={this.props.from} onChange={this.getDatepickerEventHandler('from')} />
+          <Datepicker label="To" value={this.props.to} onChange={this.getDatepickerEventHandler('to')} />
+        </React.Fragment>}
       </Pane>
     );
   }
-}
+};

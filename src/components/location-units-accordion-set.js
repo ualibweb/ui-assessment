@@ -4,54 +4,61 @@ import { AccordionSet, Accordion, Checkbox } from '@folio/stripes/components';
 
 export default class LocationUnitsAccordionSet extends React.Component {
   static propTypes = {
-    isChecked: PropTypes.object.isRequired,
     institutions: PropTypes.array.isRequired,
-    onIsCheckedChange: PropTypes.func.isRequired
+    isSelected: PropTypes.object.isRequired,
+    onChange: PropTypes.func.isRequired
   };
 
-    /* Toggles the checked state of the institution and initializes or
-  deletes the checked states of the campuses and libraries under the
-  institution, depending on whether the institution is being checked or
-  unchecked. */
+  /* Toggles the state of the institution and initializes or deletes the
+  state of the campuses and libraries under the institution, depending
+  on whether the institution is being selected or unselected. */
   handleInstitutionCheckboxChange(id, institutionIndex) {
-    const isChecked = {...this.props.isChecked};
-    const institutionIsBeingChecked = !isChecked[id];
+    const isSelected = {...this.props.isSelected};
+    const institutionIsBeingSelected = !isSelected[id];
 
-    // Toggle the checked state of the institution.
-    isChecked[id] = institutionIsBeingChecked;
+    // Toggle the state of the institution.
+    isSelected[id] = institutionIsBeingSelected;
 
-    // Update the checked states of the campuses and libraries.
-    this.props.institutions[institutionIndex].campuses.forEach(institutionIsBeingChecked ? campus => { isChecked[campus.id] = false; } : campus => {
-      delete isChecked[campus.id];
-      campus.libraries.forEach(library => { delete isChecked[library.id]; });
+    // Update the states of the campuses and libraries.
+    this.props.institutions[institutionIndex].campuses.forEach(institutionIsBeingSelected ? campus => {
+      isSelected[campus.id] = false;
+    } : campus => {
+      delete isSelected[campus.id];
+      campus.libraries.forEach(library => {
+        delete isSelected[library.id];
+      });
     });
 
-    // Lift up the checked states.
-    this.props.onIsCheckedChange(isChecked);
+    // Lift up state.
+    this.props.onChange(isSelected);
   }
 
-  /* Toggles the checked state of the campus and initializes or deletes
-  the checked states of the libraries under the campus, depending on
-  whether the campus is being checked or unchecked. */
+  /* Toggles the state of the campus and initializes or deletes the
+  states of the libraries under the campus, depending on whether the
+  campus is being selected or unselected. */
   handleCampusCheckboxChange(id, institutionIndex, campusIndex) {
-    const isChecked = {...this.props.isChecked};
-    const campusIsBeingChecked = !isChecked[id];
+    const isSelected = {...this.props.isSelected};
+    const campusIsBeingSelected = !isSelected[id];
 
-    // Toggle the checked state of the campus.
-    isChecked[id] = campusIsBeingChecked;
+    // Toggle the state of the campus.
+    isSelected[id] = campusIsBeingSelected;
 
-    // Update the checked states of the libraries.
-    this.props.institutions[institutionIndex].campuses[campusIndex].libraries.forEach(campusIsBeingChecked ? library => { isChecked[library.id] = false; } : library => { delete isChecked[library.id]; });
+    // Update the states of the libraries.
+    this.props.institutions[institutionIndex].campuses[campusIndex].libraries.forEach(campusIsBeingSelected ? library => {
+      isSelected[library.id] = false;
+    } : library => {
+      delete isSelected[library.id];
+    });
 
-    // Lift up the checked states.
-    this.props.onIsCheckedChange(isChecked);
+    // Lift up state.
+    this.props.onChange(isSelected);
   }
 
-  // Toggles the checked state of the library.
+  // Toggles the state of the library.
   handleLibraryCheckboxChange(id) {
-    this.props.onIsCheckedChange({
-      ...this.props.isChecked,
-      [id]: !this.props.isChecked[id]
+    this.props.onChange({
+      ...this.props.isSelected,
+      [id]: !this.props.isSelected[id]
     });
   }
 
@@ -62,22 +69,21 @@ export default class LocationUnitsAccordionSet extends React.Component {
 
     // Create the checkboxes.
     this.props.institutions.forEach((institution, institutionIndex) => {
-      const institutionIsChecked = this.props.isChecked[institution.id];
+      const institutionIsSelected = this.props.isSelected[institution.id];
 
       // Create a checkbox for the institution.
-      institutionCheckboxes.push(<Checkbox checked={institutionIsChecked} key={institution.id} label={institution.name} onChange={() => { this.handleInstitutionCheckboxChange(institution.id, institutionIndex); }} />);
+      institutionCheckboxes.push(<Checkbox selected={institutionIsSelected} key={institution.id} label={institution.name} onChange={() => { this.handleInstitutionCheckboxChange(institution.id, institutionIndex); }} />);
 
-      // If the institution is checked, look at its campuses.
-      if (institutionIsChecked) institution.campuses.forEach((campus, campusIndex) => {
-        const campusIsChecked = this.props.isChecked[campus.id];
+      // If the institution is selected, look at its campuses.
+      if (institutionIsSelected) institution.campuses.forEach((campus, campusIndex) => {
+        const campusIsSelected = this.props.isSelected[campus.id];
 
         // Create a checkbox for the campus.
-        campusCheckboxes.push(<Checkbox checked={campusIsChecked} key={campus.id} label={campus.name} onChange={() => { this.handleCampusCheckboxChange(campus.id, institutionIndex, campusIndex); }} />);
+        campusCheckboxes.push(<Checkbox selected={campusIsSelected} key={campus.id} label={campus.name} onChange={() => { this.handleCampusCheckboxChange(campus.id, institutionIndex, campusIndex); }} />);
 
-        // If the campus is checked, look at its libraries.
-        if (campusIsChecked) campus.libraries.forEach(library => {
-          // Create a checkbox for the library.
-          libraryCheckboxes.push(<Checkbox checked={this.props.isChecked[library.id]} key={library.id} label={library.name} onChange={() => {this.handleLibraryCheckboxChange(library.id); }} />);
+        // If the campus is selected, create checkboxes for its libraries.
+        if (campusIsSelected) campus.libraries.forEach(library => {
+          libraryCheckboxes.push(<Checkbox selected={this.props.isSelected[library.id]} key={library.id} label={library.name} onChange={() => {this.handleLibraryCheckboxChange(library.id); }} />);
         });
       });
     });
@@ -96,4 +102,4 @@ export default class LocationUnitsAccordionSet extends React.Component {
       </AccordionSet>
     );
   }
-}
+};

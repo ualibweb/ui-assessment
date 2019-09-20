@@ -2,11 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
 import createHslString from '../functions/create-hsl-string';
+import collectionTypes from '../json/collection-types.json';
 
 export default class CollectionsByMaterialTypeReport extends React.Component {
   static propTypes = {
     libraries: PropTypes.arrayOf(PropTypes.string).isRequired,
-    titlesShouldBeUsed: PropTypes.bool.isRequired,
+    types: PropTypes.arrayOf(PropTypes.string).isRequired,
     resources: PropTypes.shape({
       collectionsByMaterialType: PropTypes.shape({
         hasLoaded: PropTypes.bool.isRequired,
@@ -32,36 +33,39 @@ export default class CollectionsByMaterialTypeReport extends React.Component {
     const collectionsByMaterialType = this.props.resources.collectionsByMaterialType;
 
     if (collectionsByMaterialType !== null && collectionsByMaterialType.hasLoaded) {
-      // FIXME: Remove.
-      console.log(collectionsByMaterialType.records);
-
+      const materialTypes = collectionsByMaterialType.records;
+      const types = this.props.types;
+      const hueStep = 360 / types.length;
       const chart = this.chart;
-      const titlesOrVolumes = this.props.titlesShouldBeUsed ? 'titles' : 'volumes';
-      const hueStep = 360 / (collectionsByMaterialType.records.length);
+      const labels = materialTypes.map(materialType => materialType.name);
+      const datasets = [];
 
-      // Start fresh.
-      const labels = [];
-      const datasetData = [];
-      const backgroundColor = [];
-      const borderColor = [];
-
-      collectionsByMaterialType.records.forEach((materialType, i) => {
+      types.forEach((type, i) => {
+        const data = [];
         const hue = i * hueStep;
-        let count = 0;
 
-        // Sum the counts of the titles or volumes in the specified libraries.
-        this.props.libraries.forEach(library => {
-          const libraryCounts = materialType.counts[library];
+        materialTypes.forEach(materialType => {
+          let count = 0;
 
-          if (libraryCounts !== undefined) {
-            count += libraryCounts[titlesOrVolumes];
-          }
+          // Sum the counts.
+          this.props.libraries.forEach(library => {
+            const libraryCounts = materialType.counts[library];
+
+            if (libraryCounts !== undefined) {
+              count += libraryCounts[type];
+            }
+          });
+
+          data.push(count);
         });
 
-        labels.push(materialType.name);
-        datasetData.push(count);
-        backgroundColor.push(createHslString(hue, 0.5));
-        borderColor.push(createHslString(hue, 0.75));
+        datasets.push({
+          label: collectionTypes[type].text,
+          data,
+          backgroundColor: createHslString(hue, 0.5),
+          borderColor: createHslString(hue, 0.75),
+          borderWidth: 1,
+        });
       });
 
       if (chart === undefined) {
@@ -69,20 +73,12 @@ export default class CollectionsByMaterialTypeReport extends React.Component {
           type: 'horizontalBar',
           data: {
             labels,
-            datasets: [{
-              data: datasetData,
-              backgroundColor,
-              borderColor,
-              borderWidth: 1
-            }]
+            datasets,
           },
           options: {
             title: {
               display: true,
               text: 'Collections by Material Type'
-            },
-            legend: {
-              display: false
             },
             scales: {
               xAxes: [{
@@ -94,13 +90,10 @@ export default class CollectionsByMaterialTypeReport extends React.Component {
           }
         });
       } else {
-        const data = chart.data;
-        const dataset = data.datasets[0];
-
-        data.labels = labels;
-        dataset.data = datasetData;
-        dataset.backgroundColor = backgroundColor;
-        dataset.borderColor = borderColor;
+        chart.data = {
+          labels,
+          datasets,
+        };
 
         chart.update();
       }
@@ -110,4 +103,4 @@ export default class CollectionsByMaterialTypeReport extends React.Component {
   render() {
     return <canvas ref={this.canvasRef} />;
   }
-}
+};

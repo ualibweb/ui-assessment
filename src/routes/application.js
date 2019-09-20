@@ -7,6 +7,9 @@ import { Paneset, Pane, NavList, NavListItem } from '@folio/stripes/components';
 import GlobalVariablesPane from '../components/global-variables-pane';
 import CollectionsByLCCNumberReport from './collections-by-lcc-number-report';
 import CollectionsByMaterialTypeReport from './collections-by-material-type-report';
+import reportTypes from '../json/report-types';
+import collectionTypes from '../json/collection-types.json';
+import circulationTypes from '../json/circulation-types.json';
 
 export default class Application extends React.Component {
   static propTypes = {
@@ -29,84 +32,139 @@ export default class Application extends React.Component {
     }
   };
 
-  // Initializes state, binds an event handler, and connects a component.
   constructor(props) {
     super(props);
 
     const dateFormat = 'MM/DD/YYYY';
+    const toMoment = moment();
 
     this.state = {
       locationUnitsLoadedAt: null,
-      globalVariables: {
-        isChecked: {},
-        titlesShouldBeUsed: true,
-        from: moment().subtract(30, 'days').format(dateFormat),
-        to: moment().format(dateFormat)
-      }
+      locationUnitIsSelected: {},
+      reportType: reportTypes.collections,
+      collectionTypeIsSelected: {},
+      circulationTypeIsSelected: {},
+      from: toMoment.subtract(30, 'days').format(dateFormat),
+      to: toMoment.format(dateFormat)
     };
+    this.reports = {
+      [reportTypes.collections]: [
+        {
+          endpoint: 'collections-by-lcc-number',
+          title: 'Collections by LCC Number',
+          component: this.props.stripes.connect(CollectionsByLCCNumberReport)
+        },
+        {
+          endpoint: 'collections-by-material-type',
+          title: 'Collections by Material Type',
+          component: this.props.stripes.connect(CollectionsByMaterialTypeReport)
+        }
+      ],
+      [reportTypes.circulation]: []
+    };
+    this.handleGlobalVariableChange = this.handleGlobalVariableChange.bind(this);
 
-    this.handleGlobalVariablesChange = this.handleGlobalVariablesChange.bind(this);
-    this.connectedCollectionsByLCCNumberReport = this.props.stripes.connect(CollectionsByLCCNumberReport);
-    this.connectedCollectionsByMaterialTypeReport = this.props.stripes.connect(CollectionsByMaterialTypeReport);
+    Object.keys(collectionTypes).forEach(collectionTypeKey => {
+      this.state.collectionTypeIsSelected[collectionTypeKey] = false;
+    });
+
+    Object.keys(circulationTypes).forEach(circulationTypeKey => {
+      this.state.circulationTypeIsSelected[circulationTypeKey] = false;
+    });
   }
 
-  /* Initializes the checked state of the institutions. */
   static getDerivedStateFromProps(props, state) {
     const locationUnits = props.resources.locationUnits;
     const locationUnitsLoadedAt = locationUnits !== null && locationUnits.hasLoaded ? locationUnits.loadedAt.getTime() : null;
 
     if (locationUnitsLoadedAt !== state.locationUnitsLoadedAt) {
-      const isChecked = {};
-      locationUnits.records.forEach(institution => { isChecked[institution.id] = false; });
+      const locationUnitIsSelected = {};
+
+      locationUnits.records.forEach(institution => {
+        locationUnitIsSelected[institution.id] = false;
+      });
+
       return {
         locationUnitsLoadedAt,
-        globalVariables: {
-          ...state.globalVariables,
-          isChecked
-        }
+        locationUnitIsSelected
       };
-    } else return null;
+    } else {
+      return null;
+    }
   }
 
-  // Updates the global variables.
-  handleGlobalVariablesChange(globalVariables) {
-    this.setState({globalVariables});
+  handleGlobalVariableChange(name, value) {
+    this.setState({
+      [name]: value
+    });
   }
 
   render() {
-    const locationUnits = this.props.resources.locationUnits;
-    const locationUnitsHaveLoaded = locationUnits !== null && locationUnits.hasLoaded;
-    const checkedLibraries = [];
+    const locationUnitsResource = this.props.resources.locationUnits;
+    const locationUnitsHaveLoaded = locationUnitsResource !== null && locationUnitsResource.hasLoaded;
+    const selectedLibraries = [];
+    const selectedTypes = {
+      [reportTypes.collections]: [],
+      [reportTypes.circulation]: []
+    };
 
-    // Populate checkedLibraries.
+    let locationUnits = null;
+    let reportsPane = null;
+    let reportsSwitch = null;
+
+    // Populate selectedLibraryIds.
     if (locationUnitsHaveLoaded) {
-      locationUnits.records.forEach(institution => {
+      locationUnits = locationUnitsResource.records;
+
+      locationUnits.forEach(institution => {
         institution.campuses.forEach(campus => {
           campus.libraries.forEach(library => {
-            if (this.state.globalVariables.isChecked[library.id]) {
-              checkedLibraries.push(library.id);
+            if (this.state.locationUnitIsSelected[library.id]) {
+              selectedLibraries.push(library.id);
             }
           });
         });
       });
     }
 
+    // Populate selectedTypes[reportTypes.collections].
+    Object.keys(collectionTypes).forEach(key => {
+      if (this.state.collectionTypeIsSelected[key] === true) {
+        selectedTypes[reportTypes.collections].push(key);
+      }
+    });
+
+    // Populate selectedTypes[reportTypes.circulation].
+    Object.keys(circulationTypes).forEach(key => {
+      if (this.state.circulationTypeIsSelected[key] === true) {
+        selectedTypes[reportTypes.circulation].push(key);
+      }
+    });
+
+
+    if (selectedLibraries.length > 0) {
+      reportsPane = (
+        <Pane defaultWidth="15%" fluidContentWidth paneTitle="Reports">
+          <NavList>
+            {this.reports[this.state.reportType].map((report, i) => <NavListItem to={`${this.props.match.path}/${report.endpoint}`} key={i}>{report.title}</NavListItem>)}
+          </NavList>
+        </Pane>
+      );
+      reportsSwitch = (
+        <Switch>
+          {this.reports[this.state.reportType].map((report, i) => <Route exact path={`${this.props.match.path}/${report.endpoint}`} render={() => <report.component libraries={selectedLibraries} types={selectedTypes[this.state.reportType]} />} key={i} />)}
+        </Switch>
+      );
+    }
+
     return (
       <Paneset>
-        {locationUnitsHaveLoaded && <GlobalVariablesPane globalVariables={this.state.globalVariables} institutions={locationUnits.records} onGlobalVariablesChange={this.handleGlobalVariablesChange} />}
-        {checkedLibraries.length !== 0 && <Pane defaultWidth="15%" fluidContentWidth paneTitle="Reports">
-          <NavList>
-            <NavListItem to={`${this.props.match.path}/collections-by-lcc-number`}>Collections by LCC Number</NavListItem>
-            <NavListItem to={`${this.props.match.path}/collections-by-material-type`}>Collections by Material Type</NavListItem>
-          </NavList>
-        </Pane>}
+        <GlobalVariablesPane institutions={locationUnitsResource.records} locationUnitIsSelected={this.state.locationUnitIsSelected} reportType={this.state.reportType} collectionTypeIsSelected={this.state.collectionTypeIsSelected} circulationTypeIsSelected={this.state.circulationTypeIsSelected} from={this.state.from} to={this.state.to} onGlobalVariableChange={this.handleGlobalVariableChange} />
+        {reportsPane}
         <Pane defaultWidth="fill" fluidContentWidth paneTitle={<FormattedMessage id="ui-assessment.meta.title" />}>
-          {checkedLibraries.length !== 0 && <Switch>
-            <Route exact path={`${this.props.match.path}/collections-by-lcc-number`} render={() => <this.connectedCollectionsByLCCNumberReport libraries={checkedLibraries} titlesShouldBeUsed={this.state.globalVariables.titlesShouldBeUsed} />} />
-            <Route exact path={`${this.props.match.path}/collections-by-material-type`} render={() => <this.connectedCollectionsByMaterialTypeReport libraries={checkedLibraries} titlesShouldBeUsed={this.state.globalVariables.titlesShouldBeUsed} />} />
-          </Switch>}
+          {reportsSwitch}
         </Pane>
       </Paneset>
     );
   }
-}
+};
