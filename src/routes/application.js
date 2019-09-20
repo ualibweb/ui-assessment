@@ -7,6 +7,7 @@ import { Paneset, Pane, NavList, NavListItem } from '@folio/stripes/components';
 import GlobalVariablesPane from '../components/global-variables-pane';
 import CollectionsByLCCNumberReport from './collections-by-lcc-number-report';
 import CollectionsByMaterialTypeReport from './collections-by-material-type-report';
+import CirculationByLCCNumberReport from './circulation-by-lcc-number-report';
 import reportTypes from '../json/report-types';
 import collectionTypes from '../json/collection-types.json';
 import circulationTypes from '../json/circulation-types.json';
@@ -35,32 +36,38 @@ export default class Application extends React.Component {
   constructor(props) {
     super(props);
 
-    const dateFormat = 'MM/DD/YYYY';
     const toMoment = moment();
 
+    this.dateFormat = 'YYYY-MM-DD';
     this.state = {
       locationUnitsLoadedAt: null,
       locationUnitIsSelected: {},
       reportType: reportTypes.collections,
       collectionTypeIsSelected: {},
       circulationTypeIsSelected: {},
-      from: toMoment.subtract(30, 'days').format(dateFormat),
-      to: toMoment.format(dateFormat)
+      from: toMoment.subtract(30, 'days').format(this.dateFormat),
+      to: toMoment.format(this.dateFormat)
     };
     this.reports = {
       [reportTypes.collections]: [
         {
           endpoint: 'collections-by-lcc-number',
           title: 'Collections by LCC Number',
-          component: this.props.stripes.connect(CollectionsByLCCNumberReport)
+          component: CollectionsByLCCNumberReport
         },
         {
           endpoint: 'collections-by-material-type',
           title: 'Collections by Material Type',
-          component: this.props.stripes.connect(CollectionsByMaterialTypeReport)
+          component: CollectionsByMaterialTypeReport
         }
       ],
-      [reportTypes.circulation]: []
+      [reportTypes.circulation]: [
+        {
+          endpoint: 'circulation-by-lcc-number',
+          title: 'Circulation by LCC Number',
+          component: CirculationByLCCNumberReport
+        }
+      ]
     };
     this.handleGlobalVariableChange = this.handleGlobalVariableChange.bind(this);
 
@@ -70,6 +77,12 @@ export default class Application extends React.Component {
 
     Object.keys(circulationTypes).forEach(circulationTypeKey => {
       this.state.circulationTypeIsSelected[circulationTypeKey] = false;
+    });
+
+    Object.values(this.reports).forEach(value => {
+      value.forEach(report => {
+        report.component = this.props.stripes.connect(report.component);
+      });
     });
   }
 
@@ -152,14 +165,14 @@ export default class Application extends React.Component {
       );
       reportsSwitch = (
         <Switch>
-          {this.reports[this.state.reportType].map((report, i) => <Route exact path={`${this.props.match.path}/${report.endpoint}`} render={() => <report.component libraries={selectedLibraries} types={selectedTypes[this.state.reportType]} />} key={i} />)}
+          {this.reports[this.state.reportType].map((report, i) => <Route exact path={`${this.props.match.path}/${report.endpoint}`} render={() => <report.component libraries={selectedLibraries} types={selectedTypes[this.state.reportType]} from={this.state.from} to={this.state.to} />} key={i} />)}
         </Switch>
       );
     }
 
     return (
       <Paneset>
-        <GlobalVariablesPane institutions={locationUnitsResource.records} locationUnitIsSelected={this.state.locationUnitIsSelected} reportType={this.state.reportType} collectionTypeIsSelected={this.state.collectionTypeIsSelected} circulationTypeIsSelected={this.state.circulationTypeIsSelected} from={this.state.from} to={this.state.to} onGlobalVariableChange={this.handleGlobalVariableChange} />
+        <GlobalVariablesPane institutions={locationUnits} locationUnitIsSelected={this.state.locationUnitIsSelected} reportType={this.state.reportType} collectionTypeIsSelected={this.state.collectionTypeIsSelected} circulationTypeIsSelected={this.state.circulationTypeIsSelected} from={this.state.from} to={this.state.to} dateFormat={this.dateFormat} onGlobalVariableChange={this.handleGlobalVariableChange} />
         {reportsPane}
         <Pane defaultWidth="fill" fluidContentWidth paneTitle={<FormattedMessage id="ui-assessment.meta.title" />}>
           {reportsSwitch}

@@ -14,13 +14,14 @@ const circulationTypes = arrayify(_circulationTypes, 'key');
 
 export default class GlobalVariablesPane extends React.Component {
   static propTypes = {
-    institutions: PropTypes.array.isRequired,
+    institutions: PropTypes.array,
     locationUnitIsSelected: PropTypes.object.isRequired,
     reportType: PropTypes.number.isRequired,
     collectionTypeIsSelected: PropTypes.object.isRequired,
     circulationTypeIsSelected: PropTypes.object.isRequired,
     from: PropTypes.string.isRequired,
     to: PropTypes.string.isRequired,
+    dateFormat: PropTypes.string.isRequired,
     onGlobalVariableChange: PropTypes.func.isRequired
   };
 
@@ -43,12 +44,12 @@ export default class GlobalVariablesPane extends React.Component {
   render() {
     return (
       <Pane defaultWidth="15%" fluidContentWidth paneTitle="Global Variables">
-        <LocationUnitsAccordionSet institutions={this.props.institutions} isSelected={this.props.locationUnitIsSelected} onChange={this.getEventHandler('locationUnitIsSelected')} />
+        {this.props.institutions !== null && <LocationUnitsAccordionSet institutions={this.props.institutions} isSelected={this.props.locationUnitIsSelected} onChange={this.getEventHandler('locationUnitIsSelected')} />}
         <ReportTypesSegmentedControl value={this.props.reportType} onChange={this.getEventHandler('reportType')} />
         {this.props.reportType === reportTypes.collections ? <TypesAccordion label="Collection Types" types={collectionTypes} isSelected={this.props.collectionTypeIsSelected} onChange={this.getEventHandler('collectionTypeIsSelected')} /> : <React.Fragment>
           <TypesAccordion label="Circulation Types" types={circulationTypes} isSelected={this.props.circulationTypeIsSelected} onChange={this.getEventHandler('circulationTypeIsSelected')} />
-          <Datepicker label="From" value={this.props.from} onChange={this.getDatepickerEventHandler('from')} />
-          <Datepicker label="To" value={this.props.to} onChange={this.getDatepickerEventHandler('to')} />
+          <Datepicker label="From" value={this.props.from} dateFormat={this.props.dateFormat} onChange={this.getDatepickerEventHandler('from')} />
+          <Datepicker label="To" value={this.props.to} dateFormat={this.props.dateFormat} onChange={this.getDatepickerEventHandler('to')} />
         </React.Fragment>}
       </Pane>
     );
