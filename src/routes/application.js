@@ -8,6 +8,7 @@ import GlobalVariablesPane from '../components/global-variables-pane';
 import CollectionsByLCCNumberReport from './collections-by-lcc-number-report';
 import CollectionsByMaterialTypeReport from './collections-by-material-type-report';
 import CirculationByLCCNumberReport from './circulation-by-lcc-number-report';
+import CirculationByMaterialTypeReport from './circulation-by-material-type-report';
 import reportTypes from '../json/report-types';
 import collectionTypes from '../json/collection-types.json';
 import circulationTypes from '../json/circulation-types.json';
@@ -66,6 +67,11 @@ export default class Application extends React.Component {
           endpoint: 'circulation-by-lcc-number',
           title: 'Circulation by LCC Number',
           component: CirculationByLCCNumberReport
+        },
+        {
+          endpoint: 'circulation-by-material-type',
+          title: 'Circulation by Material Type',
+          component: CirculationByMaterialTypeReport
         }
       ]
     };

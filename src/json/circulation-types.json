@@ -2,7 +2,7 @@
   "checkouts": {
     "text": "Checkouts"
   },
-  "rentals": {
-    "text": "Rentals"
+  "renewals": {
+    "text": "Renewals"
   }
 }
