@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
+import { Button } from '@folio/stripes/components';
 import createHslString from '../functions/create-hsl-string';
 import circulationTypes from '../json/circulation-types.json';
 
@@ -26,6 +27,7 @@ export default class CirculationByMaterialTypeReport extends React.Component {
   constructor(props) {
     super(props);
     this.canvasRef = React.createRef();
+    this.handleDownloadDataButtonClick = this.handleDownloadDataButtonClick.bind(this);
   }
 
   componentDidUpdate() {
@@ -99,7 +101,39 @@ export default class CirculationByMaterialTypeReport extends React.Component {
     }
   }
 
+  handleDownloadDataButtonClick() {
+    const chartData = this.chart.data;
+    let csv =  'material_type,' + this.props.types.toString() + '\n';
+
+    for (let i = 0; i < chartData.labels.length; ++i) {
+      csv += chartData.labels[i];
+
+      for (let j = 0; j < chartData.datasets.length; ++j) {
+        csv += ',' + chartData.datasets[j].data[i];
+      }
+
+      csv += '\n';
+    }
+
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    a.href = url;
+    a.download = 'circulation-by-material-type.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   render() {
-    return <canvas ref={this.canvasRef} />;
+    const circulationByMaterialType = this.props.resources.circulationByMaterialType;
+
+    return (
+      <React.Fragment>
+        <canvas ref={this.canvasRef} />
+        <Button disabled={circulationByMaterialType === null || !circulationByMaterialType.hasLoaded} onClick={this.handleDownloadDataButtonClick}>Download Data</Button>
+      </React.Fragment>
+    );
   }
 };

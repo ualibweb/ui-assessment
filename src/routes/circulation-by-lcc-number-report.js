@@ -12,7 +12,7 @@ export default class CirculationByLCCNumberReport extends React.Component {
     from: PropTypes.string.isRequired,
     to: PropTypes.string.isRequired,
     resources: PropTypes.shape({
-      circulationsByLCCNumber: PropTypes.shape({
+      circulationByLCCNumber: PropTypes.shape({
         hasLoaded: PropTypes.bool.isRequired,
         records: PropTypes.array.isRequired
       })
@@ -20,7 +20,7 @@ export default class CirculationByLCCNumberReport extends React.Component {
   };
 
   static manifest = {
-    circulationsByLCCNumber: {
+    circulationByLCCNumber: {
       type: 'okapi',
       path: 'assessment/circulation-by-lcc-number?from=!{from}&to=!{to}'
     }
@@ -33,13 +33,14 @@ export default class CirculationByLCCNumberReport extends React.Component {
     this.state = {
       mainClass: null
     };
-    this.handleButtonClick = this.handleButtonClick.bind(this);
+    this.handleBackButtonClick = this.handleBackButtonClick.bind(this);
+    this.handleDownloadDataButtonClick = this.handleDownloadDataButtonClick.bind(this);
   }
 
   componentDidUpdate() {
-    const circulationsByLCCNumber = this.props.resources.circulationsByLCCNumber;
+    const circulationByLCCNumber = this.props.resources.circulationByLCCNumber;
 
-    if (circulationsByLCCNumber !== null && circulationsByLCCNumber.hasLoaded) {
+    if (circulationByLCCNumber !== null && circulationByLCCNumber.hasLoaded) {
       const types = this.props.types;
       const hueStep = 360 / types.length;
       const chart = this.chart;
@@ -48,7 +49,7 @@ export default class CirculationByLCCNumberReport extends React.Component {
       let labelKey;
 
       if (this.state.mainClass === null) {
-        mainClassesOrSubclasses = circulationsByLCCNumber.records;
+        mainClassesOrSubclasses = circulationByLCCNumber.records;
         labelKey = 'letter';
       } else {
         mainClassesOrSubclasses = this.state.mainClass.subclasses;
@@ -113,7 +114,7 @@ export default class CirculationByLCCNumberReport extends React.Component {
             onClick: (event, [activeElement]) => {
               if (this.state.mainClass === null) {
                 this.setState({
-                  mainClass: this.props.resources.circulationsByLCCNumber.records[activeElement._index]
+                  mainClass: this.props.resources.circulationByLCCNumber.records[activeElement._index]
                 });
               }
             }
@@ -131,17 +132,45 @@ export default class CirculationByLCCNumberReport extends React.Component {
     }
   }
 
-  handleButtonClick() {
+  handleBackButtonClick() {
     this.setState({
       mainClass: null
     });
   }
 
+  handleDownloadDataButtonClick() {
+    const chartData = this.chart.data;
+    let csv =  (this.state.mainClass === null ? 'main_class_letter' : 'subclass_letter') + ',caption,' + this.props.types.toString() + '\n';
+
+    for (let i = 0; i < chartData.labels.length; ++i) {
+      csv += chartData.labels[i] + ',"' + chartData.tooltipTitles[i] + '"';
+
+      for (let j = 0; j < chartData.datasets.length; ++j) {
+        csv += ',' + chartData.datasets[j].data[i];
+      }
+
+      csv += '\n';
+    }
+
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    a.href = url;
+    a.download = 'circulation-by-lcc-number.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   render() {
+    const circulationByLCCNumber = this.props.resources.circulationByLCCNumber;
+
     return (
       <React.Fragment>
         <canvas ref={this.canvasRef} />
-        <Button disabled={this.state.mainClass === null} onClick={this.handleButtonClick}>Back</Button>
+        <Button disabled={this.state.mainClass === null} onClick={this.handleBackButtonClick}>Back</Button>
+        <Button disabled={circulationByLCCNumber === null || !circulationByLCCNumber.hasLoaded} onClick={this.handleDownloadDataButtonClick}>Download Data</Button>
       </React.Fragment>
     );
   }

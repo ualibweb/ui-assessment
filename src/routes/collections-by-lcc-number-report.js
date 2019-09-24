@@ -31,7 +31,8 @@ export default class CollectionsByLCCNumberReport extends React.Component {
     this.state = {
       mainClass: null
     };
-    this.handleButtonClick = this.handleButtonClick.bind(this);
+    this.handleBackButtonClick = this.handleBackButtonClick.bind(this);
+    this.handleDownloadDataButtonClick = this.handleDownloadDataButtonClick.bind(this);
   }
 
   componentDidUpdate() {
@@ -129,17 +130,45 @@ export default class CollectionsByLCCNumberReport extends React.Component {
     }
   }
 
-  handleButtonClick() {
+  handleBackButtonClick() {
     this.setState({
       mainClass: null
     });
   }
 
+  handleDownloadDataButtonClick() {
+    const chartData = this.chart.data;
+    let csv =  (this.state.mainClass === null ? 'main_class_letter' : 'subclass_letter') + ',caption,' + this.props.types.toString() + '\n';
+
+    for (let i = 0; i < chartData.labels.length; ++i) {
+      csv += chartData.labels[i] + ',"' + chartData.tooltipTitles[i] + '"';
+
+      for (let j = 0; j < chartData.datasets.length; ++j) {
+        csv += ',' + chartData.datasets[j].data[i];
+      }
+
+      csv += '\n';
+    }
+
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    a.href = url;
+    a.download = 'collections-by-lcc-number.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
   render() {
+    const collectionsByLCCNumber = this.props.resources.collectionsByLCCNumber;
+
     return (
       <React.Fragment>
         <canvas ref={this.canvasRef} />
-        <Button disabled={this.state.mainClass === null} onClick={this.handleButtonClick}>Back</Button>
+        <Button disabled={this.state.mainClass === null} onClick={this.handleBackButtonClick}>Back</Button>
+        <Button disabled={collectionsByLCCNumber === null || !collectionsByLCCNumber.hasLoaded} onClick={this.handleDownloadDataButtonClick}>Download Data</Button>
       </React.Fragment>
     );
   }
