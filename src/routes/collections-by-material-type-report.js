@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import Chart from 'chart.js';
-import { Button } from '@folio/stripes/components';
+import { Button, Row, Col } from '@folio/stripes/components';
 import createHslString from '../functions/create-hsl-string';
 import collectionTypes from '../json/collection-types.json';
 
@@ -24,11 +24,17 @@ export default class CollectionsByMaterialTypeReport extends React.Component {
     }
   };
 
-  // Initializes properties.
   constructor(props) {
     super(props);
+
     this.canvasRef = React.createRef();
+    this.doughnutChartCanvasRefs = {};
+    this.doughnutCharts = {};
     this.handleDownloadDataButtonClick = this.handleDownloadDataButtonClick.bind(this);
+
+    Object.keys(collectionTypes).forEach(collectionType => {
+      this.doughnutChartCanvasRefs[collectionType] = React.createRef();
+    });
   }
 
   componentDidUpdate() {
@@ -75,7 +81,7 @@ export default class CollectionsByMaterialTypeReport extends React.Component {
           type: 'horizontalBar',
           data: {
             labels,
-            datasets,
+            datasets
           },
           options: {
             title: {
@@ -99,6 +105,46 @@ export default class CollectionsByMaterialTypeReport extends React.Component {
 
         chart.update();
       }
+
+      const doughnutChartHueStep = 360 / materialTypes.length;
+      const backgroundColor = [];
+
+      for (let i = 0; i < materialTypes.length; ++i) {
+        backgroundColor.push(createHslString(i * doughnutChartHueStep, 1.0));
+      }
+
+      this.props.types.forEach((type, i) => {
+        if (this.doughnutCharts[type] === undefined) {
+          this.doughnutCharts[type] = new Chart(this.doughnutChartCanvasRefs[type].current, {
+            type: 'doughnut',
+            data: {
+              labels,
+              datasets: [{
+                label: datasets[i].label,
+                data: datasets[i].data,
+                backgroundColor
+              }]
+            },
+            options: {
+              title: {
+                display: true,
+                text: collectionTypes[type].text
+              }
+            }
+          });
+        } else {
+          this.doughnutCharts[type].data = {
+            labels,
+            datasets:[{
+              label: datasets[i].label,
+              data: datasets[i].data,
+              backgroundColor
+            }]
+          };
+
+          this.doughnutCharts[type].update();
+        }
+      });
     }
   }
 
@@ -130,10 +176,12 @@ export default class CollectionsByMaterialTypeReport extends React.Component {
 
   render() {
     const collectionsByMaterialType = this.props.resources.collectionsByMaterialType;
+    const doughnutChartCanvases = Object.keys(collectionTypes).map((collectionType, i) => <canvas ref={this.doughnutChartCanvasRefs[collectionType]} key={i} />);
 
     return (
       <React.Fragment>
         <canvas ref={this.canvasRef} />
+        {doughnutChartCanvases}
         <Button disabled={collectionsByMaterialType === null || !collectionsByMaterialType.hasLoaded} onClick={this.handleDownloadDataButtonClick}>Download Data</Button>
       </React.Fragment>
     );
