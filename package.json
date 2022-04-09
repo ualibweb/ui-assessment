@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "chart.js": "^2.8.0",
-    "moment": "^2.24.0",
+    "moment": "^2.29.2",
     "prop-types": "^15.6.0",
     "react-intl": "^2.4.0",
     "react-router-dom": "^4.1.1"
